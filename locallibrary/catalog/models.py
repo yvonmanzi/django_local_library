@@ -25,20 +25,25 @@ class Genre(models.Model):
             ),
         ]
     
-class Book(models.Model):
-    title = models.CharField(max_length=200)
-    author = models.ForeignKey('Author', on_delete=models.RESTRICT, null=True)
-    summary = models.TextField(
-        max_length=1000, help_text="Enter a brief description of the book"
+class Language(models.Model):
+    name = models.CharField(
+        max_length=20,
+        unique=True,
+        help_text="Enter the natural language in which the book is written( eg: English.)"
     )
-    isbn =models.CharField('ISBN', max_length=13, unique=True, help_text='13 character <a href="https://www.isbn-international.org/content/what-isbn">ISBN number </a>')
-    genre = models.ManyToManyField(Genre, help_text="Select a genere for this book")
 
     def __str__(self) -> str:
-        return self.title
-    
+        return self.name
     def get_absolute_url(self):
-        return reverse('book_detail', args=[str(self.id)])
+        return reverse('language-detail', args=[str(self.id)])
+    class Meta:
+        constraints = [
+            UniqueConstraint(
+                Lower('name'),
+                name='language_name_case_insensitive_unique',
+                violation_error_message="Language already exists(case insensitive match)"
+            ),
+        ]
 
 class Author(models.Model):
     """Model representing an author."""
@@ -58,6 +63,23 @@ class Author(models.Model):
         """String for representing the Model object."""
         return f'{self.last_name}, {self.first_name}'
 
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(Author, on_delete=models.RESTRICT, null=True)
+    summary = models.TextField(
+        max_length=1000, help_text="Enter a brief description of the book"
+    )
+    isbn =models.CharField('ISBN', max_length=13, unique=True, help_text='13 character <a href="https://www.isbn-international.org/content/what-isbn">ISBN number </a>')
+    genre = models.ManyToManyField(Genre, help_text="Select a genere for this book")
+    language = models.ForeignKey(Language,on_delete=models.SET_NULL, null=True )
+
+    def __str__(self) -> str:
+        return self.title
+    
+    def get_absolute_url(self):
+        return reverse('book_detail', args=[str(self.id)])
+    class Meta:
+        ordering = ['title', 'author']
 import uuid # Required for unique book instances
 
 class BookInstance(models.Model):
